@@ -70,6 +70,8 @@ tmux_conf_new_pane_reconnect_ssh=false
 # to 'truecolor' or '24bit' or '$ tput colors' answering '16777216'
 # see https://github.com/termstandard/colors
 tmux_conf_24b_colour=auto
+# hannuriha
+tmux_conf_24b_colour=true
 
 
 # -- theming -------------------------------------------------------------------
@@ -278,6 +280,10 @@ tmux_conf_theme_status_left=" ❐ #S | ↑#{?uptime_y, #{uptime_y}y,}#{?uptime_d
 #tmux_conf_theme_status_left=" ❐ #S | ↑#{?uptime_y, #{uptime_y}y,}#{?uptime_d, #{uptime_d}d,}#{?uptime_h, #{uptime_h}h,}#{?uptime_m, #{uptime_m}m,} | #{pretty_pane_current_path} "
 tmux_conf_theme_status_right=" #{prefix}#{mouse}#{pairing}#{synchronized}#{?battery_status, #{battery_status},}#{?battery_bar, #{battery_bar},}#{?battery_percentage, #{battery_percentage},} , %R , %d %b | #{username}#{root} | #{hostname} "
 
+# hannuriha
+tmux_conf_theme_status_left=" ❐ #S "
+tmux_conf_theme_status_right=" #{prefix}#{mouse}#{pairing}#{synchronized} , %R , %F | #{username}#{root} | #{hostname} "
+
 # status left style
 tmux_conf_theme_status_left_fg="$tmux_conf_theme_colour_6,$tmux_conf_theme_colour_7,$tmux_conf_theme_colour_8"
 tmux_conf_theme_status_left_bg="$tmux_conf_theme_colour_9,$tmux_conf_theme_colour_10,$tmux_conf_theme_colour_11"
@@ -400,7 +406,7 @@ tmux_conf_urlscan_options="--compact --dedupe"
 # this is the place to override or undo settings
 
 # increase history size
-#set -g history-limit 10000
+set -g history-limit 10000
 
 # start with mouse mode enabled
 #set -g mouse on
@@ -410,12 +416,13 @@ tmux_conf_urlscan_options="--compact --dedupe"
 #set -g status-keys vi
 #set -g mode-keys vi
 
+# hannuriha
 # replace C-b by C-a instead of using both prefixes
-# set -gu prefix2
-# unbind C-a
-# unbind C-b
-# set -g prefix C-a
-# bind C-a send-prefix
+set -gu prefix2
+unbind C-a
+unbind C-b
+set -g prefix C-a
+bind C-a send-prefix
 
 # if you don't want Oh my tmux! to alter a binding or a setting, use #!important
 # bind c new-window -c '#{pane_current_path}' #!important
@@ -423,6 +430,38 @@ tmux_conf_urlscan_options="--compact --dedupe"
 # move status line to top
 #set -g status-position top
 
+# hannuriha
+# screen assistant: capture current pane and ask Claude in a new right pane
+bind C run-shell "~/.dotfiles/base/tmux-screen-assistant.sh '#{pane_id}' '#{pane_current_path}'"
+# open Claude Code plan file — with nix-chroot shell
+bind g run-shell "~/.dotfiles/base/tmux-open-plan.sh '#{pane_id}' '#{pane_current_path}' 'CND901_HOSTMODE=0 bash'"
+
+# Toggle popup window with p
+bind -N "toggle popup" p run-shell "\
+	if tmux display -p '#{socket_path}' | grep -q 'popup'; then \
+		tmux detach-client; \
+	else \
+		HOST_PATH=\$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); \
+		tmux display-popup -xC -yC -w 60% -h 60% -E \"\
+			tmux -L popup -f ~/.tmux.conf new-session -A -s popup -c '\$HOST_PATH'\"; \
+	fi"
+
+# 대문자 V,S는 각각 nix chroot 바깥에서 pane을 수직/수평 분할
+bind s run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -v -c \"\$HOST_PATH\" \"CND901_HOSTMODE=0 bash\""
+bind S run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -v -c \"\$HOST_PATH\" \"CND901_HOSTMODE=1 bash\""
+
+# v -> vtable: vl=왼쪽, vr/vv=오른쪽 (HOSTMODE=0)
+bind v switch-client -T vtable
+bind -T vtable l run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -hb -c \"\$HOST_PATH\" \"CND901_HOSTMODE=0 bash\""
+bind -T vtable r run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -h -c \"\$HOST_PATH\" \"CND901_HOSTMODE=0 bash\""
+bind -T vtable v run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -h -c \"\$HOST_PATH\" \"CND901_HOSTMODE=0 bash\""
+
+# V -> Vtable: Vl=왼쪽, Vr/Vv/VV=오른쪽 (HOSTMODE=1)
+bind V switch-client -T Vtable
+bind -T Vtable l run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -hb -c \"\$HOST_PATH\" \"CND901_HOSTMODE=1 bash\""
+bind -T Vtable r run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -h -c \"\$HOST_PATH\" \"CND901_HOSTMODE=1 bash\""
+bind -T Vtable v run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -h -c \"\$HOST_PATH\" \"CND901_HOSTMODE=1 bash\""
+bind -T Vtable V run-shell "HOST_PATH=$(echo '#{pane_current_path}' | sed 's|.*nix-chroot[^/]*||'); tmux split-window -h -c \"\$HOST_PATH\" \"CND901_HOSTMODE=1 bash\""
 
 # -- tpm -----------------------------------------------------------------------
 
